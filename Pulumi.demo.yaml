@@ -2,3 +2,13 @@ encryptionsalt: v1:rwHbslIYTx8=:v1:tHmbfW2eRkX70HXj:VyQg9t+Wr4VM/KR9EAv7MgRLv9wr
 config:
   aws:profile: demo
   aws:region: us-east-1
+  devPulumiConfig:fallBackRoute: 0.0.0.0/0
+  devPulumiConfig:igwName: csye6225-dev-igw
+  devPulumiConfig:mainNetwork: 10.0.0.0/16
+  devPulumiConfig:defaultCidr: 10.0.0.0/16
+  devPulumiConfig:privateRoutingTableName: csye6225-private-routing-table
+  devPulumiConfig:publicRouteName: csye6225-public-routing-subnet
+  devPulumiConfig:vpcName: csye6225-dev-vpc
+  devPulumiConfig:publicRoutingTableName: csye6225-public-routing-table
+  devPulumiConfig:subnetMask: 24
+  devPulumiConfig:totalSubnets: 6

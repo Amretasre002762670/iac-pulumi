@@ -2,61 +2,52 @@ require('dotenv').config();
 const pulumi = require("@pulumi/pulumi");
 const aws = require("@pulumi/aws");
 
-const subnets = require("./resources/subnet");
+const subnetsModule = require("./resources/subnet");
 const routeTable = require("./resources/routeTable");
 const routeTableAssociation = require("./resources/routeTableAssociation");
 const route = require("./resources/publicRoute");
+const subnetCidr = require("./utils/generateCidr");
 
-// const awsProfile = pulumi.get("aws:profile");
+const config = new pulumi.Config('devPulumiConfig');
 
-const main = new aws.ec2.Vpc(process.env.VPC_NAME, {
-    cidrBlock: "10.0.0.0/16",
+const main = new aws.ec2.Vpc(config.require('vpcName'), {
+    cidrBlock: config.require('defaultCidr'),
     instanceTenancy: "default",
     tags: {
-        Name: process.env.VPC_NAME,
-        // Environment: awsProfile
+        Name: config.require('vpcName'),
     },
 });
 
-const igw = new aws.ec2.InternetGateway(process.env.GW_NAME, {
+const igw = new aws.ec2.InternetGateway(config.require('igwName'), {
     vpcId: main.id,
     tags: {
-        Name: process.env.GW_NAME,
-        // Environment: awsProfile
+        Name: config.require('igwName'),
     },
 });
 
-// Create a public subnet
-const publicSubnet_1a = subnets.createSubnets(main, process.env.PUBLIC_SUBNET_1_NAME, "us-east-1a", "10.0.1.0/24");
-const publicSubnet_1b = subnets.createSubnets(main, process.env.PUBLIC_SUBNET_2_NAME, "us-east-1b", "10.0.2.0/24");
-const publicSubnet_1c = subnets.createSubnets(main, process.env.PUBLIC_SUBNET_3_NAME, "us-east-1c", "10.0.3.0/24");
-
-// Create a private subnets
-const privateSubnet_1a = subnets.createSubnets(main, process.env.PRIVATE_SUBNET_1_NAME, "us-east-1a", "10.0.4.0/24");
-const privateSubnet_1b = subnets.createSubnets(main, process.env.PRIVATE_SUBNET_2_NAME, "us-east-1b", "10.0.5.0/24");
-const privateSubnet_1c = subnets.createSubnets(main, process.env.PRIVATE_SUBNET_3_NAME, "us-east-1c", "10.0.6.0/24");
-
 // Create Public Route Table
-const publicRouteTable = routeTable.createPublicRouteTable(main, igw, process.env.PUBLIC_ROUTE_TABLE_NAME);
+const publicRouteTable = routeTable.createPublicRouteTable(main, igw, config.require('publicRoutingTableName'));
 
 // Create Private Route Table
-const privateRouteTable = routeTable.createPrivateRouteTable(main, process.env.PRIVATE_ROUTE_TABLE_NAME);
-
-// Create Public route table and subnet association
-
-const publicSubnetAssociation_1 = routeTableAssociation.createRouteTableAssociation(publicRouteTable, publicSubnet_1a, process.env.PUBLIC_ROUTE_SUBNET_ASSOCIATION_1_NAME);
-const publicSubnetAssociation_2 = routeTableAssociation.createRouteTableAssociation(publicRouteTable, publicSubnet_1b, process.env.PUBLIC_ROUTE_SUBNET_ASSOCIATION_2_NAME);
-const publicSubnetAssociation_3 = routeTableAssociation.createRouteTableAssociation(publicRouteTable, publicSubnet_1c, process.env.PUBLIC_ROUTE_SUBNET_ASSOCIATION_3_NAME);
-
-// Create private route table and subnet association
-
-const privateSubnetAssociation_1 = routeTableAssociation.createRouteTableAssociation(privateRouteTable, privateSubnet_1a, process.env.PRIVATE_ROUTE_SUBNET_ASSOCIATION_1_NAME);
-const privateSubnetAssociation_2 = routeTableAssociation.createRouteTableAssociation(privateRouteTable, privateSubnet_1b, process.env.PRIVATE_ROUTE_SUBNET_ASSOCIATION_2_NAME);
-const privateSubnetAssociation_3 = routeTableAssociation.createRouteTableAssociation(privateRouteTable, privateSubnet_1c, process.env.PRIVATE_ROUTE_SUBNET_ASSOCIATION_3_NAME);
-
-// Creating public route
-
-const publicRoute = route.createPublicRoutes(publicRouteTable, igw, process.env.PUBLIC_ROUTE_NAME);
+const privateRouteTable = routeTable.createPrivateRouteTable(main, config.require('privateRoutingTableName'));
 
 
+const mainNetwork = config.require('defaultCidr');
+const totalSubnets = config.require('totalSubnets');
+const subnetMask = config.require('subnetMask');
 
+
+const subnets_arr = subnetCidr.generateCidr(mainNetwork, totalSubnets, subnetMask);
+
+for (let i = 0; i < totalSubnets; i++) {
+    const availabilityZone = `us-east-1${String.fromCharCode(97 + (i % 3))}`;
+    const isPublic = i < 3; // First 3 subnets are public, the rest are private
+    const subnetName = isPublic ? `csye6225-public-subnet-${i + 1}` : `csye6225-private-subnet-${i + 1}`;
+    const subnetAssociationName = isPublic ? `csye6225-public-routing-association-${i + 1}` : `csye6225-private-routing-association-${i + 1}`;
+
+    const subnets = subnetsModule.createSubnets(main, subnetName, availabilityZone, subnets_arr[i].toString());
+
+    const subnetAssociation = routeTableAssociation.createRouteTableAssociation(isPublic ? publicRouteTable : privateRouteTable, subnets, subnetAssociationName);
+}
+
+const publicRoute = route.createPublicRoutes(publicRouteTable, igw, config.require('publicRouteName'));

@@ -2,6 +2,8 @@ require('dotenv').config();
 const pulumi = require("@pulumi/pulumi");
 const aws = require("@pulumi/aws");
 
+const config = new pulumi.Config('devPulumiConfig');
+
 function createPublicRouteTable(vpc, gw, routeTableName) {
     const routeTable = new aws.ec2.RouteTable(routeTableName, {
         vpcId: vpc.id, 
@@ -11,7 +13,7 @@ function createPublicRouteTable(vpc, gw, routeTableName) {
         },
         routes: [
             {
-                cidrBlock: "0.0.0.0/0",
+                cidrBlock: config.require('fallBackRoute'),
                 gatewayId: gw.id,
             },
         ],
