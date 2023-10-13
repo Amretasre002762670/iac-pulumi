@@ -12,3 +12,4 @@ config:
   devPulumiConfig:publicRoutingTableName: csye6225-public-routing-table
   devPulumiConfig:subnetMask: 24
   devPulumiConfig:totalSubnets: 6
+  devPulumiConfig:selectedRegion: us-east-1
