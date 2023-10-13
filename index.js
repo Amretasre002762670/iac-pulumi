@@ -35,19 +35,27 @@ const privateRouteTable = routeTable.createPrivateRouteTable(main, config.requir
 const mainNetwork = config.require('defaultCidr');
 const totalSubnets = config.require('totalSubnets');
 const subnetMask = config.require('subnetMask');
+const selectedRegion = config.require('selectedRegion');
 
+const selectedRegionAvailabilityZones = aws.getAvailabilityZones({
+    state: "available",
+    region: selectedRegion,
+});
 
 const subnets_arr = subnetCidr.generateCidr(mainNetwork, totalSubnets, subnetMask);
 
-for (let i = 0; i < totalSubnets; i++) {
-    const availabilityZone = `us-east-1${String.fromCharCode(97 + (i % 3))}`;
-    const isPublic = i < 3; // First 3 subnets are public, the rest are private
-    const subnetName = isPublic ? `csye6225-public-subnet-${i + 1}` : `csye6225-private-subnet-${i + 1}`;
-    const subnetAssociationName = isPublic ? `csye6225-public-routing-association-${i + 1}` : `csye6225-private-routing-association-${i + 1}`;
+selectedRegionAvailabilityZones.then(az => {
+    for (let i = 0; i < az.names.length; i++) {
+        const availabilityZone = az.names[i];
+        const isPublic = i < (totalSubnets / 2); // First 3 subnets are public, the rest are private
+        const subnetName = isPublic ? `csye6225-public-subnet-${i + 1}` : `csye6225-private-subnet-${i + 1}`;
+        const subnetAssociationName = isPublic ? `csye6225-public-routing-association-${i + 1}` : `csye6225-private-routing-association-${i + 1}`;
+        const subnetCidr = subnets_arr[i]; // Ensure that subnets_arr contains the desired CIDRs.
 
-    const subnets = subnetsModule.createSubnets(main, subnetName, availabilityZone, subnets_arr[i].toString());
-
-    const subnetAssociation = routeTableAssociation.createRouteTableAssociation(isPublic ? publicRouteTable : privateRouteTable, subnets, subnetAssociationName);
-}
+        // Create the subnets using your existing createSubnets and createRouteTableAssociation functions
+        const subnets = subnetsModule.createSubnets(main, subnetName, availabilityZone, subnetCidr.toString());
+        const subnetAssociation = routeTableAssociation.createRouteTableAssociation(isPublic ? publicRouteTable : privateRouteTable, subnets, subnetAssociationName);
+    }
+})
 
 const publicRoute = route.createPublicRoutes(publicRouteTable, igw, config.require('publicRouteName'));
