@@ -11,5 +11,20 @@ config:
   devPulumiConfig:vpcName: csye6225-dev-vpc
   devPulumiConfig:publicRoutingTableName: csye6225-public-routing-table
   devPulumiConfig:subnetMask: 24
-  devPulumiConfig:totalSubnets: 6
+  # devPulumiConfig:totalSubnets: 6
   devPulumiConfig:selectedRegion: us-east-1
+  devPulumiConfig:amiId: ami-019f3af19e8e5b408 
+  devPulumiConfig:sgName: csye6225-sg
+  devPulumiConfig:ssh_from_port: 22
+  devPulumiConfig:ssh_to_port: 22
+  devPulumiConfig:protocol: tcp
+  devPulumiConfig:ipv4: "0.0.0.0/0"
+  devPulumiConfig:http_from_port: 80
+  devPulumiConfig:http_to_port: 80
+  devPulumiConfig:https_from_port: 443
+  devPulumiConfig:https_to_port: 443
+  devPulumiConfig:webapp_from_port: 8080
+  devPulumiConfig:webapp_to_port: 8080
+  devPulumiConfig:ec2InstanceName: "csye6225-ec2-instance-name"
+  devPulumiConfig:keyName: "csye6225-key-pair"
+  
