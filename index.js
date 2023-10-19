@@ -33,29 +33,143 @@ const privateRouteTable = routeTable.createPrivateRouteTable(main, config.requir
 
 
 const mainNetwork = config.require('defaultCidr');
-const totalSubnets = config.require('totalSubnets');
 const subnetMask = config.require('subnetMask');
 const selectedRegion = config.require('selectedRegion');
 
-const selectedRegionAvailabilityZones = aws.getAvailabilityZones({
-    state: "available",
-    region: selectedRegion,
-});
+const created_subnet_arr = [];
 
-const subnets_arr = subnetCidr.generateCidr(mainNetwork, totalSubnets, subnetMask);
+async function createSubnet() {
+    try {
+        const selectedRegionAvailabilityZones = await aws.getAvailabilityZones({
+            state: "available",
+            region: selectedRegion,
+        });
 
-selectedRegionAvailabilityZones.then(az => {
-    for (let i = 0; i < az.names.length; i++) {
-        const availabilityZone = az.names[i];
-        const isPublic = i < (totalSubnets / 2); // First 3 subnets are public, the rest are private
-        const subnetName = isPublic ? `csye6225-public-subnet-${i + 1}` : `csye6225-private-subnet-${i + 1}`;
-        const subnetAssociationName = isPublic ? `csye6225-public-routing-association-${i + 1}` : `csye6225-private-routing-association-${i + 1}`;
-        const subnetCidr = subnets_arr[i]; // Ensure that subnets_arr contains the desired CIDRs.
+        const selectedRegionAvailabilityZonesLength = (selectedRegionAvailabilityZones.names || []).length;
+        const maxSubnets = 3; // Maximum subnets to create (both public and private)
+        const totalSubnets = Math.min(selectedRegionAvailabilityZonesLength, maxSubnets)
 
-        // Create the subnets using your existing createSubnets and createRouteTableAssociation functions
-        const subnets = subnetsModule.createSubnets(main, subnetName, availabilityZone, subnetCidr.toString());
-        const subnetAssociation = routeTableAssociation.createRouteTableAssociation(isPublic ? publicRouteTable : privateRouteTable, subnets, subnetAssociationName);
+        const baseIp = config.require("defaultCidr");
+        const subnetMask = config.require("subnetMask");  // Subnet mask in bits (e.g., 24 for /24)
+
+        const subnets_arr = subnetCidr.generateCidr(baseIp, totalSubnets * 2, subnetMask);
+
+
+        // Split the subnets_arr into public and private subnets
+        const publicSubnetsCidr = subnets_arr.slice(0, totalSubnets);
+        const privateSubnetsCidr = subnets_arr.slice(totalSubnets);
+
+        for (let i = 0; i < totalSubnets; i++) {
+            const availabilityZone = selectedRegionAvailabilityZones.names[i];
+            const publicSubnetCidr = publicSubnetsCidr[i];
+            const privateSubnetCidr = privateSubnetsCidr[i];
+
+            // Create the public subnets using your existing functions
+            const publicSubnet = subnetsModule.createSubnets(main, `csye6225-public-subnet-${i + 1}`, availabilityZone, publicSubnetCidr);
+            created_subnet_arr.push(publicSubnet);
+
+            const privateSubnet = subnetsModule.createSubnets(main, `csye6225-private-subnet-${i + 1}`, availabilityZone, privateSubnetCidr);
+
+            // Create route table associations as needed
+            const subnetPublicAssociation = routeTableAssociation.createRouteTableAssociation(
+                publicRouteTable,
+                publicSubnet,
+                `csye6225-public-routing-association-${i + 1}`
+            );
+
+            const subnetPrivateAssociation = routeTableAssociation.createRouteTableAssociation(
+                privateRouteTable,
+                privateSubnet,
+                `csye6225-private-routing-association-${i + 1}`
+            );
+        }
+
+        // for (let i = 0; i < totalSubnets; i++) {
+        //     const availabilityZone = selectedRegionAvailabilityZones.names[i];
+        //     const privateSubnetCidr = privateSubnetsCidr[i];
+
+        //     // Create the private subnets using your existing functions
+        //     const privateSubnet = subnetsModule.createSubnets(main, `csye6225-private-subnet-${i + 1}`, availabilityZone, privateSubnetCidr);
+
+        //     // Create route table associations as needed
+        //     const subnetPrivateAssociation = routeTableAssociation.createRouteTableAssociation(
+        //         privateRouteTable,
+        //         privateSubnet,
+        //         `csye6225-private-routing-association-${i + 1}`
+        //     );
+        // }
+
+        const publicRoute = route.createPublicRoutes(publicRouteTable, igw, config.require('publicRouteName'));
+
+        const sg = new aws.ec2.SecurityGroup(config.require('sgName'), {
+            vpcId: main.id,
+            description: "CSYE6225 Security group for Node app",
+            ingress: [
+                {
+                    fromPort: config.require('ssh_from_port'), //SSH
+                    toPort: config.require('ssh_to_port'),
+                    protocol: config.require('protocol'),
+                    cidrBlocks: [config.require('ipv4')],
+                },
+                {
+                    fromPort: config.require('http_from_port'), //HTTP
+                    toPort: config.require('http_from_port'),
+                    protocol: config.require('protocol'),
+                    cidrBlocks: [config.require('ipv4')],
+                    // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
+                },
+                {
+                    fromPort: config.require('https_from_port'), //HTTPS
+                    toPort: config.require('https_from_port'),
+                    protocol: config.require('protocol'),
+                    cidrBlocks: [config.require('ipv4')],
+                    // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
+                },
+                {
+                    fromPort: config.require('webapp_from_port'), //your port
+                    toPort: config.require('webapp_from_port'),
+                    protocol: config.require('protocol'),
+                    cidrBlocks: [config.require('ipv4')],
+                    // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
+                },
+            ],
+            egress: [{ protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] }],
+            tags: {
+                Name: config.require('sgName'),
+            },
+        });
+
+        // Create an EC2 instance
+        const ec2Instance = new aws.ec2.Instance(config.require("ec2InstanceName"), {
+            ami: config.require("amiId"),
+            instanceType: "t2.micro",
+            subnetId: created_subnet_arr[0].id,
+            keyName: config.require('keyName'),
+            associatePublicIpAddress: true,
+            vpcSecurityGroupIds: [sg.id,],
+            securityGroupIds: [sg.id],
+            rootBlockDevice: {
+                volumeType: "gp2",
+                volumeSize: 25,
+                deleteOnTermination: true,
+            },
+            creditSpecification: {
+                cpuCredits: "standard",
+            },
+            tags: {
+                Name: config.require("ec2InstanceName"),
+            },
+        });
+
+        // console.log(ec2Instance.id);
+
+    } catch (error) {
+        console.error("Error while creating subnets:", error);
     }
-})
+}
 
-const publicRoute = route.createPublicRoutes(publicRouteTable, igw, config.require('publicRouteName'));
+createSubnet();
+
+// Output EC2 Instance ID
+// exports.ec2InstanceId = ec2Instance.id;
+
