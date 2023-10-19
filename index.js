@@ -52,7 +52,7 @@ async function createSubnet() {
         const baseIp = config.require("defaultCidr");
         const subnetMask = config.require("subnetMask");  // Subnet mask in bits (e.g., 24 for /24)
 
-        const subnets_arr = subnetCidr.generateCidr(baseIp, totalSubnets*2, subnetMask);
+        const subnets_arr = subnetCidr.generateCidr(baseIp, totalSubnets * 2, subnetMask);
 
 
         // Split the subnets_arr into public and private subnets
@@ -154,8 +154,7 @@ async function createSubnet() {
                 deleteOnTermination: true,
             },
             creditSpecification: {
-            cpuCredits: "standard",
-
+                cpuCredits: "standard",
             },
             tags: {
                 Name: config.require("ec2InstanceName"),
