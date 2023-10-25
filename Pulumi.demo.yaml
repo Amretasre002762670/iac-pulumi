@@ -37,4 +37,7 @@ config:
   devPulumiConfig:db_to_port: 3306
   devPulumiConfig:subnetGroupName: csye6225-rds-subnet-grp-name
   devPulumiConfig:sgRDSName: csye6225-sg-rds
+  devPulumiConfig:dbTypePg: mysql8.0
+  devPulumiConfig:dbMaxConnections: 100
+  devPulumiConfig:dbEngine: mysql
   

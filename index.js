@@ -144,12 +144,12 @@ async function createSubnet() {
         });
 
         const customParameterGroup = new aws.rds.ParameterGroup(config.require("rdsName"), {
-            family: "mysql8.0", // Use the MariaDB 10.4 family
+            family: config.require('dbTypePg'),
             description: "Custom parameter group for csye 6225 db",
             parameters: [
                 {
                     name: "max_connections",
-                    value: "100",
+                    value: config.require('dbMaxConnections'),
                 },
             ],
             tags: {
@@ -185,20 +185,19 @@ async function createSubnet() {
             allocatedStorage: 20,
             storageType: "gp2",
             instanceClass: "db.t3.micro",
-            engine: "mysql",
+            engine: config.require("dbEngine"),
             dbName: config.require("dbName"),
             username: config.require("dbInstanceUserName"),
             password: config.require("dbInstancePassword"),
             parameterGroupName: customParameterGroup.name,
             dbSubnetGroupName: mySubnetGroup.name,
             skipFinalSnapshot: true,
-            vpcSecurityGroupIds: [sgDB.id],
+            vpcSecurityGroupIds: [sgDB.id, sg.id],
             publiclyAccessible: false,
         });
 
         const dbEndpoint = dbInstance.endpoint;
         const dbHost = dbEndpoint.apply(endpoint => endpoint.split(":")[0]);    
-        console.log(dbHost, "HOST NAME from DB instance")
         let userDataScript = dbHost.apply(host => 
             `#!/bin/bash
             echo "Setting up environment variables"
