@@ -31,12 +31,14 @@ const publicRouteTable = routeTable.createPublicRouteTable(main, igw, config.req
 // Create Private Route Table
 const privateRouteTable = routeTable.createPrivateRouteTable(main, config.require('privateRoutingTableName'));
 
+// const rdsEndpoint = pulumi.interpolate`${rdsInstance.endpoint}`;
 
 const mainNetwork = config.require('defaultCidr');
 const subnetMask = config.require('subnetMask');
 const selectedRegion = config.require('selectedRegion');
 
 const created_subnet_arr = [];
+const private_subnet_arr = [];
 
 async function createSubnet() {
     try {
@@ -69,6 +71,7 @@ async function createSubnet() {
             created_subnet_arr.push(publicSubnet);
 
             const privateSubnet = subnetsModule.createSubnets(main, `csye6225-private-subnet-${i + 1}`, availabilityZone, privateSubnetCidr);
+            private_subnet_arr.push(privateSubnet);
 
             // Create route table associations as needed
             const subnetPublicAssociation = routeTableAssociation.createRouteTableAssociation(
@@ -139,6 +142,84 @@ async function createSubnet() {
             },
         });
 
+        const customParameterGroup = new aws.rds.ParameterGroup(config.require("rdsName"), {
+            family: config.require('dbTypePg'),
+            description: "Custom parameter group for csye 6225 db",
+            parameters: [
+                {
+                    name: "max_connections",
+                    value: config.require('dbMaxConnections'),
+                },
+            ],
+            tags: {
+                Name: config.require("rdsName"),
+            },
+        });
+
+        const mySubnetGroup = new aws.rds.SubnetGroup(config.require('subnetGroupName'), {
+            subnetIds: private_subnet_arr.map(subnet => subnet.id),
+            tags: {
+                Name: config.require('subnetGroupName'),
+            }, // Use the appropriate subnets (e.g., public or private)
+        });
+
+        const sgDB = new aws.ec2.SecurityGroup(config.require('sgRDSName'), {
+            vpcId: main.id,
+            description: "CSYE6225 Security group for Node app",
+            ingress: [
+                {
+                    fromPort: config.require('db_from_port'),
+                    toPort: config.require('db_to_port'),
+                    protocol: config.require('protocol'),
+                    securityGroups: [sg.id]
+                },
+            ],
+            egress: [{ protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] }],
+            tags: {
+                Name: config.require('sgRDSName'),
+            },
+        });
+
+        const dbInstance = new aws.rds.Instance(config.require("dbInstanceName"), {
+            allocatedStorage: 20,
+            storageType: "gp2",
+            instanceClass: "db.t3.micro",
+            engine: config.require("dbEngine"),
+            dbName: config.require("dbName"),
+            username: config.require("dbInstanceUserName"),
+            password: config.require("dbInstancePassword"),
+            parameterGroupName: customParameterGroup.name,
+            dbSubnetGroupName: mySubnetGroup.name,
+            skipFinalSnapshot: true,
+            vpcSecurityGroupIds: [sgDB.id, sg.id],
+            publiclyAccessible: false,
+        });
+
+        const dbEndpoint = dbInstance.endpoint;
+        const dbHost = dbEndpoint.apply(endpoint => endpoint.split(":")[0]);    
+        let userDataScript = dbHost.apply(host => 
+            `#!/bin/bash
+            echo "Setting up environment variables"
+
+            # Set environment variables
+            echo 'export HOST=${host}' >> /etc/environment
+            echo 'export MYSQLUSER=${config.require("dbInstanceUserName")}' >> /etc/environment
+            echo 'export PASSWORD=${config.require("dbInstancePassword")}' >> /etc/environment
+            
+            # Optionally, you can load the environment variables for the current session
+            source /etc/environment
+            
+            # Now you can access these environment variables in your scripts or applications
+            echo "HOST is: $HOST"
+            echo "MYSQLUSER is: $MYSQLUSER"
+
+            sudo systemctl daemon-reload
+
+            sudo systemctl enable Assignment-node-app.service
+            sudo systemctl start Assignment-node-app.service
+            `
+        );
+
         // Create an EC2 instance
         const ec2Instance = new aws.ec2.Instance(config.require("ec2InstanceName"), {
             ami: config.require("amiId"),
@@ -159,9 +240,8 @@ async function createSubnet() {
             tags: {
                 Name: config.require("ec2InstanceName"),
             },
-        });
-
-        // console.log(ec2Instance.id);
+            userData: userDataScript
+        });        
 
     } catch (error) {
         console.error("Error while creating subnets:", error);
@@ -170,6 +250,4 @@ async function createSubnet() {
 
 createSubnet();
 
-// Output EC2 Instance ID
-// exports.ec2InstanceId = ec2Instance.id;
 
