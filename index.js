@@ -31,7 +31,6 @@ const publicRouteTable = routeTable.createPublicRouteTable(main, igw, config.req
 // Create Private Route Table
 const privateRouteTable = routeTable.createPrivateRouteTable(main, config.require('privateRoutingTableName'));
 
-// Keep the user data script as is, no changes needed specifically for MariaDB
 // const rdsEndpoint = pulumi.interpolate`${rdsInstance.endpoint}`;
 
 const mainNetwork = config.require('defaultCidr');
