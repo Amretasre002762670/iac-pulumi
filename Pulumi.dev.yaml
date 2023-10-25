@@ -13,7 +13,7 @@ config:
   devPulumiConfig:subnetMask: 24
   # devPulumiConfig:totalSubnets: 6
   devPulumiConfig:selectedRegion: us-east-1
-  devPulumiConfig:amiId: ami-0c0510a9071989e60
+  devPulumiConfig:amiId: ami-089cec06f10a3da39
   devPulumiConfig:sgName: csye6225-sg
   devPulumiConfig:ssh_from_port: 22
   devPulumiConfig:ssh_to_port: 22
@@ -27,4 +27,16 @@ config:
   devPulumiConfig:webapp_to_port: 8080
   devPulumiConfig:ec2InstanceName: csye6225-ec2-instance-name
   devPulumiConfig:keyName: csye6225-key-pair
+  devPulumiConfig:rdsName: csye6225-rds
+  devPulumiConfig:dbInstanceName: csye6225-db-instance
+  devPulumiConfig:dbInstanceUserName: root
+  devPulumiConfig:dbInstancePassword: csye6225rds
+  devPulumiConfig:dbName: Assignments_Demo_DB
+  devPulumiConfig:sgDBName: root
+  devPulumiConfig:db_from_port: 3306
+  devPulumiConfig:db_to_port: 3306
+  devPulumiConfig:subnetGroupName: csye6225-rds-subnet-grp-name
+  devPulumiConfig:sgRDSName: csye6225-sg-rds
+
+  
 
