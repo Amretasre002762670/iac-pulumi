@@ -26,7 +26,7 @@ config:
   devPulumiConfig:webapp_from_port: 8080
   devPulumiConfig:webapp_to_port: 8080
   devPulumiConfig:ec2InstanceName: "csye6225-ec2-instance-name"
-  devPulumiConfig:keyName: "csye6225-key-pair"
+  devPulumiConfig:keyName: csye6225-demo-key
   devPulumiConfig:rdsName: csye6225-rds
   devPulumiConfig:dbInstanceName: csye6225-db-instance
   devPulumiConfig:dbInstanceUserName: root
