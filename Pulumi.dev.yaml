@@ -13,7 +13,7 @@ config:
   devPulumiConfig:subnetMask: 24
   # devPulumiConfig:totalSubnets: 6
   devPulumiConfig:selectedRegion: us-east-1
-  devPulumiConfig:amiId: ami-089cec06f10a3da39
+  devPulumiConfig:amiId: ami-0a7d7d4abb2651854
   devPulumiConfig:sgName: csye6225-sg
   devPulumiConfig:ssh_from_port: 22
   devPulumiConfig:ssh_to_port: 22
@@ -40,6 +40,18 @@ config:
   devPulumiConfig:dbTypePg: mysql8.0
   devPulumiConfig:dbMaxConnections: 100
   devPulumiConfig:dbEngine: mysql
+  devPulumiConfig:domainName: dev.donquixote.me
+  devPulumiConfig:port: 8080
+  devPulumiConfig:ttl: 60
+  devPulumiConfig:route53Name: csye6225-route-53
+  devPulumiConfig:cloudwatchRoleName: cloudwatchRole
+  devPulumiConfig:cloudWatchPolicy: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  devPulumiConfig:log4jsPolicy: arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+  devPulumiConfig:instanceProfileName: csye6225-cloudwatch
+
+  
+
+  
 
 
   
