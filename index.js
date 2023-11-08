@@ -7,6 +7,7 @@ const routeTable = require("./resources/routeTable");
 const routeTableAssociation = require("./resources/routeTableAssociation");
 const route = require("./resources/publicRoute");
 const subnetCidr = require("./utils/generateCidr");
+const role = require("./resources/iamRole");
 
 const config = new pulumi.Config('devPulumiConfig');
 
@@ -39,12 +40,26 @@ const selectedRegion = config.require('selectedRegion');
 
 const created_subnet_arr = [];
 const private_subnet_arr = [];
+const domainName = config.require('domainName');
+const port = config.require('port');
+
+// Create an IAM role
+const cloudwatch_role = role.createIAMRole(config.require('cloudwatchRoleName'), config.require('cloudWatchPolicy'), config.require('log4jsPolicy'));
+
+const instanceProfile = new aws.iam.InstanceProfile(config.require("instanceProfileName"), {
+    name: config.require("instanceProfileName"),
+    role: cloudwatch_role.name,
+});
 
 async function createSubnet() {
     try {
         const selectedRegionAvailabilityZones = await aws.getAvailabilityZones({
             state: "available",
             region: selectedRegion,
+        });
+
+        const hostedZone = aws.route53.getZone({
+            name: domainName,
         });
 
         const selectedRegionAvailabilityZonesLength = (selectedRegionAvailabilityZones.names || []).length;
@@ -191,13 +206,17 @@ async function createSubnet() {
             parameterGroupName: customParameterGroup.name,
             dbSubnetGroupName: mySubnetGroup.name,
             skipFinalSnapshot: true,
-            vpcSecurityGroupIds: [sgDB.id, sg.id],
+            vpcSecurityGroupIds: [sgDB.id],
             publiclyAccessible: false,
+            provisioned: {
+                maxRetries: 10, // Increase the number of retries
+                retryInterval: 10, // Increase the interval between retries (in seconds)
+            },
         });
 
         const dbEndpoint = dbInstance.endpoint;
-        const dbHost = dbEndpoint.apply(endpoint => endpoint.split(":")[0]);    
-        let userDataScript = dbHost.apply(host => 
+        const dbHost = dbEndpoint.apply(endpoint => endpoint.split(":")[0]);
+        let userDataScript = dbHost.apply(host =>
             `#!/bin/bash
             echo "Setting up environment variables"
 
@@ -215,6 +234,15 @@ async function createSubnet() {
 
             sudo systemctl daemon-reload
 
+            # Apply the configuration to the CloudWatch Agent
+            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -c file:/opt/cloudwatch-config.json -s
+
+            # Now you can run the CloudWatch Agent configuration command
+            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/dist/cloudwatch-config.json -s
+
+            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
+            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a start
+
             sudo systemctl enable Assignment-node-app.service
             sudo systemctl start Assignment-node-app.service
             `
@@ -223,6 +251,7 @@ async function createSubnet() {
         // Create an EC2 instance
         const ec2Instance = new aws.ec2.Instance(config.require("ec2InstanceName"), {
             ami: config.require("amiId"),
+            iamInstanceProfile: instanceProfile.name,
             instanceType: "t2.micro",
             subnetId: created_subnet_arr[0].id,
             keyName: config.require('keyName'),
@@ -241,7 +270,23 @@ async function createSubnet() {
                 Name: config.require("ec2InstanceName"),
             },
             userData: userDataScript
-        });        
+        });
+
+        const zoneId = hostedZone.then(zone => zone.id);
+
+        const aRecord = new aws.route53.Record(
+            config.require("route53Name"),
+            {
+                name: domainName,
+                type: "A",
+                zoneId: zoneId,
+                records: [ec2Instance.publicIp],
+                ttl: config.require("ttl"),
+                tags: {
+                    Name: config.require("route53Name"),
+                },
+            },
+        );
 
     } catch (error) {
         console.error("Error while creating subnets:", error);

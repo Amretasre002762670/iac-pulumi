@@ -40,4 +40,11 @@ config:
   devPulumiConfig:dbTypePg: mysql8.0
   devPulumiConfig:dbMaxConnections: 100
   devPulumiConfig:dbEngine: mysql
+  devPulumiConfig:domainName: demo.donquixote.me
+  devPulumiConfig:port: 8080
+  devPulumiConfig:ttl: 60
+  devPulumiConfig:route53Name: csye6225-route-53
+  devPulumiConfig:cloudwatchRoleName: cloudwatchRole
+  devPulumiConfig:cloudWatchPolicy: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  devPulumiConfig:instanceProfileName: csye6225-cloudwatch
   
