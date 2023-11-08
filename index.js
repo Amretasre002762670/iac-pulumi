@@ -208,10 +208,10 @@ async function createSubnet() {
             skipFinalSnapshot: true,
             vpcSecurityGroupIds: [sgDB.id],
             publiclyAccessible: false,
-            provisioned: {
-                maxRetries: 10, // Increase the number of retries
-                retryInterval: 10, // Increase the interval between retries (in seconds)
-            },
+            // provisioned: {
+            //     maxRetries: 10, // Increase the number of retries
+            //     retryInterval: 10, // Increase the interval between retries (in seconds)
+            // },
         });
 
         const dbEndpoint = dbInstance.endpoint;
