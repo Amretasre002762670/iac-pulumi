@@ -2,7 +2,7 @@ require('dotenv').config();
 const pulumi = require("@pulumi/pulumi");
 const aws = require("@pulumi/aws");
 
-function createIAMRole(roleName, cloudwatchPolicy, log4Policy) {
+function createIAMRole(roleName, cloudwatchPolicy) {
     const role = new aws.iam.Role(roleName, {
         name: roleName,
         assumeRolePolicy: JSON.stringify({
@@ -25,10 +25,10 @@ function createIAMRole(roleName, cloudwatchPolicy, log4Policy) {
         policyArn: cloudwatchPolicy,
     });
 
-    const policyAttachment_log4js = new aws.iam.PolicyAttachment("policyAttachment_log4js", {
-        roles: [role.name],
-        policyArn: log4Policy,
-    });
+    // const policyAttachment_log4js = new aws.iam.PolicyAttachment("policyAttachment_log4js", {
+    //     roles: [role.name],
+    //     policyArn: log4Policy,
+    // });
 
     return role;
 }

@@ -44,7 +44,7 @@ const domainName = config.require('domainName');
 const port = config.require('port');
 
 // Create an IAM role
-const cloudwatch_role = role.createIAMRole(config.require('cloudwatchRoleName'), config.require('cloudWatchPolicy'), config.require('log4jsPolicy'));
+const cloudwatch_role = role.createIAMRole(config.require('cloudwatchRoleName'), config.require('cloudWatchPolicy'));
 
 const instanceProfile = new aws.iam.InstanceProfile(config.require("instanceProfileName"), {
     name: config.require("instanceProfileName"),
