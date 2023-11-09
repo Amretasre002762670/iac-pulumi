@@ -46,6 +46,6 @@ config:
   devPulumiConfig:route53Name: csye6225-route-53
   devPulumiConfig:cloudwatchRoleName: cloudwatchRole
   devPulumiConfig:cloudWatchPolicy: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-  devPulumiConfig:log4jsPolicy: arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+  # devPulumiConfig:log4jsPolicy: arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
   devPulumiConfig:instanceProfileName: csye6225-cloudwatch
   
