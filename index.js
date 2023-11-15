@@ -119,6 +119,29 @@ async function createSubnet() {
 
         const publicRoute = route.createPublicRoutes(publicRouteTable, igw, config.require('publicRouteName'));
 
+        const loadBalancerSecurityGroup = new aws.ec2.SecurityGroup(config.require("loadBalancerSg"), {
+            vpcId: main.id,
+            description: "Load Balancer Security Group",
+            ingress: [
+                {
+                    protocol: config.require('protocol'),
+                    fromPort: config.require('http_from_port'),
+                    toPort: config.require('http_to_port'),
+                    cidrBlocks: [config.require('ipv4')],
+                },
+                {
+                    protocol: config.require('protocol'),
+                    fromPort: config.require('https_from_port'),
+                    toPort: config.require('https_to_port'),
+                    cidrBlocks: [config.require('ipv4')],
+                },
+            ],
+            egress: [{ protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] }],
+            tags: {
+                Name: config.require('loadBalancerSg'),
+            },
+        });
+
         const sg = new aws.ec2.SecurityGroup(config.require('sgName'), {
             vpcId: main.id,
             description: "CSYE6225 Security group for Node app",
@@ -129,25 +152,26 @@ async function createSubnet() {
                     protocol: config.require('protocol'),
                     cidrBlocks: [config.require('ipv4')],
                 },
-                {
-                    fromPort: config.require('http_from_port'), //HTTP
-                    toPort: config.require('http_from_port'),
-                    protocol: config.require('protocol'),
-                    cidrBlocks: [config.require('ipv4')],
-                    // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
-                },
-                {
-                    fromPort: config.require('https_from_port'), //HTTPS
-                    toPort: config.require('https_from_port'),
-                    protocol: config.require('protocol'),
-                    cidrBlocks: [config.require('ipv4')],
-                    // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
-                },
+                // {
+                //     fromPort: config.require('http_from_port'), //HTTP
+                //     toPort: config.require('http_from_port'),
+                //     protocol: config.require('protocol'),
+                //     cidrBlocks: [config.require('ipv4')],
+                //     // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
+                // },
+                // {
+                //     fromPort: config.require('https_from_port'), //HTTPS
+                //     toPort: config.require('https_from_port'),
+                //     protocol: config.require('protocol'),
+                //     cidrBlocks: [config.require('ipv4')],
+                //     // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
+                // },
                 {
                     fromPort: config.require('webapp_from_port'), //your port
                     toPort: config.require('webapp_from_port'),
                     protocol: config.require('protocol'),
-                    cidrBlocks: [config.require('ipv4')],
+                    // cidrBlocks: [config.require('ipv4')],
+                    securityGroups: [loadBalancerSecurityGroup.id],
                     // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
                 },
             ],
@@ -209,8 +233,8 @@ async function createSubnet() {
             vpcSecurityGroupIds: [sgDB.id],
             publiclyAccessible: false,
             // provisioned: {
-            //     maxRetries: 10, // Increase the number of retries
-            //     retryInterval: 10, // Increase the interval between retries (in seconds)
+            //     maxRetries: 10,
+            //     retryInterval: 10,
             // },
         });
 
@@ -220,24 +244,19 @@ async function createSubnet() {
             `#!/bin/bash
             echo "Setting up environment variables"
 
-            # Set environment variables
             echo 'export HOST=${host}' >> /etc/environment
             echo 'export MYSQLUSER=${config.require("dbInstanceUserName")}' >> /etc/environment
             echo 'export PASSWORD=${config.require("dbInstancePassword")}' >> /etc/environment
-            
-            # Optionally, you can load the environment variables for the current session
+
             source /etc/environment
-            
-            # Now you can access these environment variables in your scripts or applications
+
             echo "HOST is: $HOST"
             echo "MYSQLUSER is: $MYSQLUSER"
 
             sudo systemctl daemon-reload
 
-            # Apply the configuration to the CloudWatch Agent
             sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -c file:/opt/cloudwatch-config.json -s
 
-            # Now you can run the CloudWatch Agent configuration command
             sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/dist/cloudwatch-config.json -s
 
             sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
@@ -249,27 +268,163 @@ async function createSubnet() {
         );
 
         // Create an EC2 instance
-        const ec2Instance = new aws.ec2.Instance(config.require("ec2InstanceName"), {
-            ami: config.require("amiId"),
-            iamInstanceProfile: instanceProfile.name,
+        // const ec2Instance = new aws.ec2.Instance(config.require("ec2InstanceName"), {
+        //     ami: config.require("amiId"),
+        //     iamInstanceProfile: instanceProfile.name,
+        //     instanceType: "t2.micro",
+        //     subnetId: created_subnet_arr[0].id,
+        //     keyName: config.require('keyName'),
+        //     associatePublicIpAddress: true,
+        //     vpcSecurityGroupIds: [sg.id,],
+        //     securityGroupIds: [sg.id],
+        //     rootBlockDevice: {
+        //         volumeType: "gp2",
+        //         volumeSize: 25,
+        //         deleteOnTermination: true,
+        //     },
+        //     creditSpecification: {
+        //         cpuCredits: "standard",
+        //     },
+        //     tags: {
+        //         Name: config.require("ec2InstanceName"),
+        //     },
+        //     userData: userDataScript
+        // });
+
+
+        const launchTemplate = new aws.ec2.LaunchTemplate(config.require("launchTemplate"), {
+            name: config.require("launchTemplate"),
+            imageId: config.require("amiId"),
             instanceType: "t2.micro",
-            subnetId: created_subnet_arr[0].id,
             keyName: config.require('keyName'),
-            associatePublicIpAddress: true,
-            vpcSecurityGroupIds: [sg.id,],
-            securityGroupIds: [sg.id],
-            rootBlockDevice: {
-                volumeType: "gp2",
-                volumeSize: 25,
-                deleteOnTermination: true,
+            userData: pulumi.interpolate`${userDataScript}`.apply(script =>Buffer.from(script).toString('base64')),
+            iamInstanceProfile: {
+                name: instanceProfile.name,
             },
-            creditSpecification: {
-                cpuCredits: "standard",
-            },
+            networkInterfaces: [
+                {
+                    associatePublicIpAddress: true,
+                    securityGroups: [sg.id],
+                    subnetId: created_subnet_arr[0].id,
+                },
+            ],
             tags: {
-                Name: config.require("ec2InstanceName"),
+                Name: config.require("launchTemplate"),
+            }
+        });
+
+        const targetGroup = new aws.lb.TargetGroup(config.require("targetGroupName"), {
+            port: config.require("port"),
+            protocol: "HTTP",
+            targetType: "instance",
+            vpcId: main.id,
+            healthCheck: {
+                enabled: true,
+                healthyThreshold: config.require("healthyThreshold"),
+                path: config.require("healthRoute"),
+                port: config.require("port"),
+                protocol: config.require("protocolTG"),
+                interval: config.require("intervalTG"),
+                timeout: config.require("timeoutTG"),
             },
-            userData: userDataScript
+        },
+            {
+                dependsOn: [dbInstance], // Specify the dependency on the RDS instance
+            }
+        );
+
+        const autoScalingGroup = new aws.autoscaling.Group(config.require("autoScalingGroup"), {
+            vpcZoneIdentifiers: created_subnet_arr,
+            launchTemplate: {
+                id: launchTemplate.id,
+                version: "$Latest",
+            },
+            minSize: config.require("AsMinTries"),
+            maxSize: config.require("AsMaxTries"),
+            desiredCapacity: config.require("AsDesiredCapacity"),
+            targetGroupArns: [targetGroup.arn],
+            defaultCooldown: config.require("AsDefaultCooldown"),
+            // healthCheckType: "EC2",
+            // healthCheckGracePeriod: 300,
+            tags: [
+                {
+                    key: "Name",
+                    value: config.require("autoScalingGroup"),
+                    propagateAtLaunch: true,
+                },
+            ],
+        });
+
+        const scaleUpPolicy = new aws.autoscaling.Policy(config.require("scaleUpPolicy"), {
+            scalingAdjustment: config.require("scalingUpAdjustments"),
+            adjustmentType: config.require("adjustmentType"),
+            cooldown: config.require("coolDown"),
+            autoscalingGroupName: autoScalingGroup.name,
+            policyType: config.require("policyType"),
+        });
+
+        const scaleDownPolicy = new aws.autoscaling.Policy(config.require("scaleDownPolicy"), {
+            scalingAdjustment: config.require("scalingDownAdjustments"),
+            adjustmentType: config.require("adjustmentType"),
+            cooldown: config.require("coolDown"),
+            autoscalingGroupName: autoScalingGroup.name,
+            policyType: config.require("policyType"),
+        });
+
+        const cpuAlarmScaleUp = new aws.cloudwatch.MetricAlarm(config.require("cpuAlarmScaleUpName"), {
+            alarmName: config.require("cpuAlarmScaleUpName"),
+            comparisonOperator: "GreaterThanThreshold",
+            evaluationPeriods: config.require("evaluationPeriods"),
+            threshold: config.require("scalingUpThreshold"),
+            namespace: "AWS/EC2",
+            metricName: config.require("scalingMetricName"),
+            period: config.require("scalingPeriod"),
+            statistic: config.require("scalingStatistic"),
+            dimensions: {
+                AutoScalingGroupName: autoScalingGroup.name,
+            },
+            alarmActions: [scaleUpPolicy.arn],
+            actionsEnabled: true,
+        });
+
+        const cpuAlarmScaleDown = new aws.cloudwatch.MetricAlarm(config.require("cpuAlarmScaleDownName"), {
+            alarmName: config.require("cpuAlarmScaleUpName"),
+            comparisonOperator: "LessThanThreshold",
+            evaluationPeriods: config.require("evaluationPeriods"),
+            threshold: config.require("scalingDownThreshold"),
+            namespace: "AWS/EC2",
+            metricName: config.require("scalingMetricName"),
+            period: config.require("scalingPeriod"),
+            statistic: "Average",
+            dimensions: {
+                AutoScalingGroupName: autoScalingGroup.name,
+            },
+            alarmActions: [scaleDownPolicy.arn],
+            actionsEnabled: true,
+        });
+
+        const loadBalancer = new aws.lb.LoadBalancer(config.require("loadBalancerName"), {
+            internal: false,
+            enableDeletionProtection: false,
+            securityGroups: [loadBalancerSecurityGroup.id],
+            subnets: created_subnet_arr,
+            // enableHttp2: true,
+            // enableCrossZoneLoadBalancing: true,
+            // idleTimeout: 60,
+            loadBalancerType: "application",
+            ipAddressType: config.require("loadBalancerIPType"),
+        });
+
+        const httpListener = new aws.lb.Listener(config.require("httpListnerName"), {
+            loadBalancerArn: loadBalancer.arn,
+            port: config.require("httpListnerPort"),
+            protocol: config.require("protocolTG"),
+            defaultActions: [
+                {
+                    type: config.require("httpListnerDefaultType"),
+                    targetGroupArn: targetGroup.arn,
+                },
+            ],
         });
 
         const zoneId = hostedZone.then(zone => zone.id);
@@ -280,8 +435,14 @@ async function createSubnet() {
                 name: domainName,
                 type: "A",
                 zoneId: zoneId,
-                records: [ec2Instance.publicIp],
-                ttl: config.require("ttl"),
+                // ttl: config.require("ttl"),
+                aliases: [
+                    {
+                        evaluateTargetHealth: true,
+                        name: loadBalancer.dnsName,
+                        zoneId: loadBalancer.zoneId,
+                    },
+                ],
                 tags: {
                     Name: config.require("route53Name"),
                 },
