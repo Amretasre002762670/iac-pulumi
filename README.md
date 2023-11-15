@@ -40,5 +40,10 @@ pulumi stack export
 pulumi destroy --target <URN_OF_THE_SUBNET>
 ```
 
+```
+cat /var/log/cloud-init.log
+cat /var/log/cloud-init-output.log
+```
+
 
 
