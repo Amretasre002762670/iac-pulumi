@@ -82,6 +82,9 @@ config:
   devPulumiConfig:loadBalancerIPType: ipv4
   devPulumiConfig:httpListnerName: csye6225-dev-http-listner-name
   devPulumiConfig:httpListnerDefaultType: forward
+  devPulumiConfig:snsTopic: csye6225-dev-sns
+ 
+  
 
   
 
