@@ -46,4 +46,13 @@ cat /var/log/cloud-init-output.log
 ```
 
 
+Google Cloud Credentials saved in:
+```
+gcloud init
+gcloud auth application-default login
+pulumi config set gcp:project <your-gcp-project-id>
+/Users/amretasrerengarajan/.config/gcloud/application_default_credentials.json
+```
+
+
 

@@ -8,8 +8,11 @@ const routeTableAssociation = require("./resources/routeTableAssociation");
 const route = require("./resources/publicRoute");
 const subnetCidr = require("./utils/generateCidr");
 const role = require("./resources/iamRole");
+const sns = require("./resources/sns");
+const gcp = require("@pulumi/gcp");
 
 const config = new pulumi.Config('devPulumiConfig');
+// const credentialsConfig = new pulumi.Config('awsCredentials');
 
 const main = new aws.ec2.Vpc(config.require('vpcName'), {
     cidrBlock: config.require('defaultCidr'),
@@ -26,10 +29,10 @@ const igw = new aws.ec2.InternetGateway(config.require('igwName'), {
     },
 });
 
-// Create Public Route Table
+
 const publicRouteTable = routeTable.createPublicRouteTable(main, igw, config.require('publicRoutingTableName'));
 
-// Create Private Route Table
+
 const privateRouteTable = routeTable.createPrivateRouteTable(main, config.require('privateRoutingTableName'));
 
 // const rdsEndpoint = pulumi.interpolate`${rdsInstance.endpoint}`;
@@ -43,7 +46,7 @@ const private_subnet_arr = [];
 const domainName = config.require('domainName');
 const port = config.require('port');
 
-// Create an IAM role
+
 const cloudwatch_role = role.createIAMRole(config.require('cloudwatchRoleName'), config.require('cloudWatchPolicy'));
 
 const instanceProfile = new aws.iam.InstanceProfile(config.require("instanceProfileName"), {
@@ -63,16 +66,14 @@ async function createSubnet() {
         });
 
         const selectedRegionAvailabilityZonesLength = (selectedRegionAvailabilityZones.names || []).length;
-        const maxSubnets = 3; // Maximum subnets to create (both public and private)
+        const maxSubnets = 3;
         const totalSubnets = Math.min(selectedRegionAvailabilityZonesLength, maxSubnets)
 
         const baseIp = config.require("defaultCidr");
-        const subnetMask = config.require("subnetMask");  // Subnet mask in bits (e.g., 24 for /24)
+        const subnetMask = config.require("subnetMask");
 
         const subnets_arr = subnetCidr.generateCidr(baseIp, totalSubnets * 2, subnetMask);
 
-
-        // Split the subnets_arr into public and private subnets
         const publicSubnetsCidr = subnets_arr.slice(0, totalSubnets);
         const privateSubnetsCidr = subnets_arr.slice(totalSubnets);
 
@@ -81,14 +82,14 @@ async function createSubnet() {
             const publicSubnetCidr = publicSubnetsCidr[i];
             const privateSubnetCidr = privateSubnetsCidr[i];
 
-            // Create the public subnets using your existing functions
+
             const publicSubnet = subnetsModule.createSubnets(main, `csye6225-public-subnet-${i + 1}`, availabilityZone, publicSubnetCidr);
             created_subnet_arr.push(publicSubnet);
 
             const privateSubnet = subnetsModule.createSubnets(main, `csye6225-private-subnet-${i + 1}`, availabilityZone, privateSubnetCidr);
             private_subnet_arr.push(privateSubnet);
 
-            // Create route table associations as needed
+
             const subnetPublicAssociation = routeTableAssociation.createRouteTableAssociation(
                 publicRouteTable,
                 publicSubnet,
@@ -119,6 +120,17 @@ async function createSubnet() {
 
         const publicRoute = route.createPublicRoutes(publicRouteTable, igw, config.require('publicRouteName'));
 
+        const snsArn = sns.snsArn();
+
+        // const snsArn = pulumi.output(config.require('snsTopic')).apply(async (snsTopicName) => {
+        //     const snsTopic = await new aws.sns.Topic(snsTopicName);
+        //     return snsTopic.arn;
+        // });
+
+        // const snsArnInterpolated = pulumi.interpolate`${snsArn}`;
+        // const accessIdOutput = new pulumi.Output(credentialsConfig.require("accessKey")).apply(value => value);
+        // const secretAccessKeyOutput = new pulumi.Output(credentialsConfig.require("secretAccessKey")).apply(value => value);
+
         const loadBalancerSecurityGroup = new aws.ec2.SecurityGroup(config.require("loadBalancerSg"), {
             vpcId: main.id,
             description: "Load Balancer Security Group",
@@ -147,27 +159,27 @@ async function createSubnet() {
             description: "CSYE6225 Security group for Node app",
             ingress: [
                 {
-                    fromPort: config.require('ssh_from_port'), //SSH
+                    fromPort: config.require('ssh_from_port'),
                     toPort: config.require('ssh_to_port'),
                     protocol: config.require('protocol'),
                     cidrBlocks: [config.require('ipv4')],
                 },
                 // {
-                //     fromPort: config.require('http_from_port'), //HTTP
+                //     fromPort: config.require('http_from_port'),
                 //     toPort: config.require('http_from_port'),
                 //     protocol: config.require('protocol'),
                 //     cidrBlocks: [config.require('ipv4')],
                 //     // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
                 // },
                 // {
-                //     fromPort: config.require('https_from_port'), //HTTPS
+                //     fromPort: config.require('https_from_port'), 
                 //     toPort: config.require('https_from_port'),
                 //     protocol: config.require('protocol'),
                 //     cidrBlocks: [config.require('ipv4')],
                 //     // ipv6CidrBlocks: [config.config['iac-pulumi:ipv6_cidr_blocks']], 
                 // },
                 {
-                    fromPort: config.require('webapp_from_port'), //your port
+                    fromPort: config.require('webapp_from_port'),
                     toPort: config.require('webapp_from_port'),
                     protocol: config.require('protocol'),
                     // cidrBlocks: [config.require('ipv4')],
@@ -240,32 +252,73 @@ async function createSubnet() {
 
         const dbEndpoint = dbInstance.endpoint;
         const dbHost = dbEndpoint.apply(endpoint => endpoint.split(":")[0]);
-        let userDataScript = dbHost.apply(host =>
-            `#!/bin/bash
-            echo "Setting up environment variables"
-
-            echo 'export HOST=${host}' >> /etc/environment
-            echo 'export MYSQLUSER=${config.require("dbInstanceUserName")}' >> /etc/environment
-            echo 'export PASSWORD=${config.require("dbInstancePassword")}' >> /etc/environment
-
-            source /etc/environment
-
-            echo "HOST is: $HOST"
-            echo "MYSQLUSER is: $MYSQLUSER"
-
-            sudo systemctl daemon-reload
-
-            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -c file:/opt/cloudwatch-config.json -s
-
-            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/dist/cloudwatch-config.json -s
-
-            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
-            sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a start
-
-            sudo systemctl enable Assignment-node-app.service
-            sudo systemctl start Assignment-node-app.service
+        const dbInstancePassword = config.require("dbInstancePassword");
+        const dbInstanceUserName = config.require("dbInstanceUserName");
+        const userDataScript = pulumi.all([dbHost, dbInstancePassword, dbInstanceUserName, snsArn]).apply(
+            ([host, password, userName, sns]) => pulumi.interpolate`#!/bin/bash
+                echo "Setting up environment variables"
+                echo "export HOST=${host}" >> /etc/environment
+                echo "export MYSQLUSER=${userName}" >> /etc/environment
+                echo "export PASSWORD=${password}" >> /etc/environment
+                echo "export TOPICARN=${sns}" >> /etc/environment
+        
+                source /etc/environment
+        
+                echo "HOST is: $HOST"
+                echo "MYSQLUSER is: $MYSQLUSER"
+                echo "TOPICARN is: $TOPICARN"
+        
+                sudo systemctl daemon-reload
+        
+                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -c file:/opt/cloudwatch-config.json -s
+        
+                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/dist/cloudwatch-config.json -s
+        
+                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
+                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a start
+        
+                sudo systemctl enable Assignment-node-app.service
+                sudo systemctl start Assignment-node-app.service
             `
         );
+
+        // let userDataScript = dbHost.apply(host =>
+        //     `#!/bin/bash
+        //     echo "Setting up environment variables"
+
+        //     echo 'export HOST=${host}' >> /etc/environment
+        //     echo 'export MYSQLUSER=${config.require("dbInstanceUserName")}' >> /etc/environment
+        //     echo 'export PASSWORD=${config.require("dbInstancePassword")}' >> /etc/environment
+
+        //     echo "export TOPICARN=${snsArnInterpolated}" >> /etc/environment
+        //     echo "export accessId=$(pulumi interpolate '${accessIdOutput}')" >> /etc/environment
+        //     echo "export secretAccessKey=$(pulumi interpolate '${secretAccessKeyOutput}')" >> /etc/environment
+
+        //     echo "export AWS_SDK_LOAD_CONFIG=1" >> /etc/environment
+
+        //     echo "export AWS_CONFIG_FILE=/opt/dist/config/aws-config.js" >> /etc/environment
+
+        //     source /etc/environment
+
+        //     echo "HOST is: $HOST"
+        //     echo "MYSQLUSER is: $MYSQLUSER"
+        //     echo "AWS_CONFIG_FILE is: $AWS_CONFIG_FILE"
+
+        //     export AWS_SDK_LOAD_CONFIG=1
+
+        //     sudo systemctl daemon-reload
+
+        //     sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -c file:/opt/cloudwatch-config.json -s
+
+        //     sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/dist/cloudwatch-config.json -s
+
+        //     sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
+        //     sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a start
+
+        //     sudo systemctl enable Assignment-node-app.service
+        //     sudo systemctl start Assignment-node-app.service
+        //     `
+        // );
 
         // Create an EC2 instance
         // const ec2Instance = new aws.ec2.Instance(config.require("ec2InstanceName"), {
@@ -297,7 +350,7 @@ async function createSubnet() {
             imageId: config.require("amiId"),
             instanceType: "t2.micro",
             keyName: config.require('keyName'),
-            userData: pulumi.interpolate`${userDataScript}`.apply(script =>Buffer.from(script).toString('base64')),
+            userData: pulumi.interpolate`${userDataScript}`.apply(script => Buffer.from(script).toString('base64')),
             iamInstanceProfile: {
                 name: instanceProfile.name,
             },
@@ -448,6 +501,163 @@ async function createSubnet() {
                 },
             },
         );
+
+        // const customRole = new gcp.projects.IAMCustomRole("customRole", {
+        //     roleId: "iam.serviceAccounts.create",
+        //     permissions: ["iam.serviceAccountCreator", "iam.serviceAccounts.get", "resourcemanager.projectIamAdmin"],
+        //     title: "Create Service Accounts",
+        //     description: "Allows creating service accounts",
+        // });
+
+        // const serviceAccount = new gcp.serviceaccount.Account("assignment", {
+        //     accountId: "assignment",
+        //     displayName: "Service Account",
+        // });
+
+        // const serviceAccountRoleBinding = new gcp.projects.IAMBinding("serviceAccountRoleBinding", {
+        //     project: gcp.config.project,
+        //     role: customRole.name,
+        //     members: [`serviceAccount:${serviceAccount.email}`],
+        //     serviceAccountId: serviceAccount.accountId
+        // });
+
+        // // const storageBucket = new gcp.storage.Bucket("my-storage-bucket", {
+        // //     location: "us-central1",
+        // // });
+
+        // const objectCreatorRoleBinding = new gcp.projects.IAMBinding("objectCreatorRoleBinding", {
+        //     project: gcp.config.project,
+        //     role: "roles/storage.objectCreator",
+        //     members: [`serviceAccount:${serviceAccount.email}`],
+        // });
+
+        // const accessKeys = new gcp.serviceaccount.Key("my-access-keys", {
+        //     serviceAccountId: serviceAccount.accountId,
+        // });
+
+        // const member = "user:amretasrert@gmail.com";
+
+        const serviceAccount = new gcp.serviceaccount.Account("csye6225-demo-acct", {
+            accountId: "csye6225-demo-acct",
+            displayName: "CSYE6225 Demo Account",
+        });
+
+        const serviceAccountKey = new gcp.serviceaccount.Key("cloud-account-key", {
+            serviceAccountId: serviceAccount.name,
+        });
+
+        // const secretServiceKey = new aws.secretsmanager.Secret(config.require("secretName"), {
+        //     description: "Service account key for GCP",
+        //     secretString: serviceAccountKey.privateKeyJson,
+        // });
+
+        const myBucket = new gcp.storage.Bucket("my-bucket", {
+            location: "us-central1",
+            forceDestroy: true,
+        });
+
+        const bucketIAMBinding = new gcp.storage.BucketIAMBinding("my-bucket-iam-binding", {
+            bucket: myBucket.name,
+            members: [
+                serviceAccount.email.apply(email => `serviceAccount:${email}`),
+            ],
+            role: "roles/storage.objectCreator",
+        });
+
+        const bucketIAMBinding_2 = new gcp.storage.BucketIAMBinding("my-bucket-iam-binding-admin", {
+            bucket: myBucket.name,
+            members: [
+                serviceAccount.email.apply(email => `serviceAccount:${email}`),
+            ],
+            role: "roles/storage.objectAdmin",
+        });
+
+        const lambdaRole = new aws.iam.Role(config.require("lambdaRole"), {
+            assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "lambda.amazonaws.com" })
+        });
+
+        const lambdaRolePolicyAttachment = new aws.iam.RolePolicyAttachment("myLambdaRolePolicyAttachment", {
+            role: lambdaRole,
+            policyArn: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+        });
+
+        const lambdaRolePolicyAttachment_2 = new aws.iam.RolePolicyAttachment("myLambdaRolePolicyAttachment_2", {
+            role: lambdaRole,
+            policyArn: "arn:aws:iam::aws:policy/AmazonSNSFullAccess",
+        });
+
+        const cloudwatchLogsPolicy = new aws.iam.Policy("cloudwatchLogsPolicy", {
+            policy: {
+                Version: "2012-10-17",
+                Statement: [
+                    {
+                        Effect: "Allow",
+                        Action: [
+                            "logs:CreateLogGroup",
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents",
+                        ],
+                        Resource: "arn:aws:logs:*:*:*",
+                    },
+                ],
+            },
+        });
+
+        const lambdaRolePolicyAttachment_3 = new aws.iam.RolePolicyAttachment("lambdaRolePolicyAttachment_3", {
+            role: lambdaRole.name,
+            policyArn: cloudwatchLogsPolicy.arn,
+        });
+
+        // const logGroup = new aws.cloudwatch.LogGroup("lambda-logs", {
+        //     retentionInDays: 7, 
+        // });
+
+        const lambdaFunction = new aws.lambda.Function(config.require("lambdaFunctionName"), {
+            handler: config.require("handler"),
+            role: lambdaRole.arn,
+            functionName: config.require("lambdaFunctionName"),
+            runtime: config.require("runtime"),
+            code: new pulumi.asset.AssetArchive({
+                ".": new pulumi.asset.FileArchive("./serverless.zip"),
+            }),
+            packageType: "Zip",
+            environment: {
+                variables: {
+                    BUCKET_NAME: myBucket.name,
+                    // SNS_TOPIC_ARN: snsArn,
+                    SERVICE_ACCOUNT_KEY: serviceAccountKey.privateKey,
+                    MAILGUN_API_KEY: config.require("mailApi"),
+                    MAILGUN_DOMAIN: config.require("mailDomain")
+                },
+            },
+            // timeout: 60,
+            // logGroupName: config.require("lambdaLogGrp"),
+        });
+
+        const snsLambdaPermission = new aws.lambda.Permission("myLambdaPermission", {
+            action: "lambda:InvokeFunction",
+            function: lambdaFunction.arn,
+            principal: "sns.amazonaws.com",
+            sourceArn: snsArn,
+        });
+
+        const snsSubscription = new aws.sns.TopicSubscription("snsSubscription", {
+            protocol: "lambda",
+            topic: snsArn,
+            endpoint: lambdaFunction.arn,
+        });
+
+        // const snsLambdaPermissionTest = new aws.lambda.Permission("mySNSLambdaPermissions", {
+        //     action: "lambda:InvokeFunction",
+        //     function: lambdaFunctionTest.arn,
+        //     principal: "sns.amazonaws.com",
+        //     sourceArn: snsTopic.arn,
+        // });
+
+        // const lambdaEventSourceMapping = new aws.lambda.EventSourceMapping("myLambdaEventSourceMapping", {
+        //     eventSourceArn: snsArn,
+        //     functionName: lambdaFunction.name,
+        // });
 
     } catch (error) {
         console.error("Error while creating subnets:", error);
