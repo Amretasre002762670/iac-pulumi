@@ -7,7 +7,7 @@ config:
   devPulumiConfig:AsMaxTries: "3"
   devPulumiConfig:AsMinTries: "1"
   devPulumiConfig:adjustmentType: PercentChangeInCapacity
-  devPulumiConfig:amiId: ami-0a7d7d4abb2651854
+  devPulumiConfig:amiId: ami-011125049af4831a9
   devPulumiConfig:autoScalingGroup: csye6225-devAutoScalingGroup
   devPulumiConfig:bucketLocation: us-central1
   devPulumiConfig:bucketName: csye6225-dev-bucket
@@ -35,7 +35,7 @@ config:
   devPulumiConfig:fallBackRoute: 0.0.0.0/0
   devPulumiConfig:handler: index.handler
   devPulumiConfig:healthRoute: /healthz
-  devPulumiConfig:healthyThreshold: "60"
+  devPulumiConfig:healthyThreshold: 5
   devPulumiConfig:http_from_port: "80"
   devPulumiConfig:http_to_port: "80"
   devPulumiConfig:httpListener: csye6225-dev-http-listener
@@ -54,9 +54,9 @@ config:
   devPulumiConfig:lambdaRole: csye6225-dev-lambda-role
   devPulumiConfig:lambdaService: lambda.amazonaws.com
   devPulumiConfig:launchTemplate: csye6225-dev-launch-template
-  devPulumiConfig:loadBalancer: csye6225-dev-load-balancer
+  # devPulumiConfig:loadBalancer: csye6225-loadBalancer
   devPulumiConfig:loadBalancerIPType: ipv4
-  devPulumiConfig:loadBalancerName: csye6225-dev-load-balancer
+  devPulumiConfig:loadBalancerName: csye6225-loadBalancer
   devPulumiConfig:loadBalancerSg: csye6225-dev-load-balancer-sg
   devPulumiConfig:log4jsPolicy: arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
   devPulumiConfig:mailApi: 1b78b77329307a9ecff7149f4a6d0e0e-30b58138-8cf81061
@@ -100,4 +100,6 @@ config:
   devPulumiConfig:vpcName: csye6225-dev-dev-vpc
   devPulumiConfig:webapp_from_port: "8080"
   devPulumiConfig:webapp_to_port: "8080"
-  gcp:project: sye6225-dev-406320
+  gcp:project: csye6225-dev-406320
+  devPulumiConfig:snsPolicyCreationName: csye6225-sns-creation-role
+  devPulumiConfig:targetGroupName: csye6225-dev-tg
