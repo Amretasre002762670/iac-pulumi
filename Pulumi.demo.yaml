@@ -7,7 +7,7 @@ config:
   devPulumiConfig:AsMaxTries: "3"
   devPulumiConfig:AsMinTries: "1"
   devPulumiConfig:adjustmentType: PercentChangeInCapacity
-  devPulumiConfig:amiId: ami-0b3b4753cbe0bc6ab
+  devPulumiConfig:amiId: ami-011125049af4831a9
   devPulumiConfig:autoScalingGroup: csye6225-demoAutoScalingGroup
   devPulumiConfig:cloudWatchPolicy: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
   devPulumiConfig:cloudwatchRoleName: cloudwatchRole
@@ -28,6 +28,7 @@ config:
   devPulumiConfig:ec2InstanceName: "csye6225-demo-ec2-instance-name"
   devPulumiConfig:evaluationPeriods: "1"
   devPulumiConfig:fallBackRoute: 0.0.0.0/0
+  devPulumiConfig:handler: index.handler
   devPulumiConfig:healthRoute: /healthz
   devPulumiConfig:healthyThreshold: "5"
   devPulumiConfig:http_from_port: "80"
@@ -44,11 +45,17 @@ config:
   devPulumiConfig:intervalTG: "60"
   devPulumiConfig:ipv4: "0.0.0.0/0"
   devPulumiConfig:keyName: csye6225-demo-key
+  devPulumiConfig:lambdaFunctionName: csye6225-demo-lambda-function
+  devPulumiConfig:lambdaLogGrp: lambda-logs
+  devPulumiConfig:lambdaRole: csye6225-demo-lambda-role
+  devPulumiConfig:lambdaService: lambda.amazonaws.com
   devPulumiConfig:launchTemplate: csye6225-demo-launch-template
   devPulumiConfig:loadBalancer: csye6225-demo-load-balancer
   devPulumiConfig:loadBalancerIPType: ipv4
   devPulumiConfig:loadBalancerName: csye6225-load-balancer
   devPulumiConfig:loadBalancerSg: csye6225-demo-load-balancer-sg
+  devPulumiConfig:mailApi: 1b78b77329307a9ecff7149f4a6d0e0e-30b58138-8cf81061
+  devPulumiConfig:mailDomain: donquixote.me
   devPulumiConfig:mainNetwork: 10.0.0.0/16
   devPulumiConfig:policyType: SimpleScaling
   devPulumiConfig:port: "8080"
@@ -59,6 +66,7 @@ config:
   devPulumiConfig:publicRoutingTableName: csye6225-demo-public-routing-table
   devPulumiConfig:rdsName: csye6225-demo-rds
   devPulumiConfig:route53Name: csye6225-demo-route-53
+  devPulumiConfig:runtime: nodejs14.x
   devPulumiConfig:scaleDownPolicy: csye6225-demo-Scale-Down-Policy
   devPulumiConfig:scaleUpPolicy: csye6225-demo-Scale-Up-Policy
   devPulumiConfig:scalingDownAdjustments: "-1"
@@ -68,8 +76,11 @@ config:
   devPulumiConfig:scalingStatistic: Average
   devPulumiConfig:scalingUpAdjustments: "1"
   devPulumiConfig:scalingUpThreshold: "5"
+  devPulumiConfig:secretName: gcp-service-key
   # devPulumiConfig:totalSubnets: 6
   devPulumiConfig:selectedRegion: us-east-1
+  devPulumiConfig:servicAccountKey: cloud-account-key
+  devPulumiConfig:servicAccountName: csye6225-demo-acct
   devPulumiConfig:sgDBName: root
   devPulumiConfig:sgName: csye6225-demo-sg
   devPulumiConfig:sgRDSName: csye6225-demo-sg-rds
@@ -85,20 +96,11 @@ config:
   devPulumiConfig:vpcName: csye6225-demo-dev-vpc
   devPulumiConfig:webapp_from_port: "8080"
   devPulumiConfig:webapp_to_port: "8080"
+  devPulumiConfig:dynamoDbTableName: csye6225-demo-email-tracking
+  devPulumiConfig:dynamoDBARN: arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+  devPulumiConfig:serviceAcctName: csye6225-demo-acct
+  devPulumiConfig:cloudAcctKey: cloud-account-key
+  devPulumiConfig:bucketName: csye6225-demo-bucket
+  devPulumiConfig:bucketLocation: us-central1
+  devPulumiConfig:
   gcp:project: csye6225-demo-406315
-  devPulumiConfig:servicAccountName: csye6225-demo-acct
-  devPulumiConfig:servicAccountKey: cloud-account-key
-  devPulumiConfig:gcpBucketName: my-bucket
-  devPulumiConfig:gcpLocation: us-central1
-  devPulumiConfig:lambdaRole: csye6225-demo-lambda-role
-  devPulumiConfig:lambdaService: lambda.amazonaws.com
-  devPulumiConfig:lambdaFunctionName: csye6225-demo-lambda-function
-  devPulumiConfig:lambdaLogGrp: lambda-logs
-  devPulumiConfig:handler: index.handler
-  devPulumiConfig:runtime: nodejs14.x
-  devPulumiConfig:secretName: gcp-service-key
-  devPulumiConfig:mailApi: 1b78b77329307a9ecff7149f4a6d0e0e-30b58138-8cf81061
-  devPulumiConfig:mailDomain: donquixote.me
-
-
-
