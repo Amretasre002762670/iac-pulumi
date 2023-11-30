@@ -2,94 +2,102 @@ encryptionsalt: v1:79w8WXXyiqo=:v1:73VGnvaD6Ki483Ex:EmFTRcUK6EQ1EQAaY4JBEmkXKPP1
 config:
   aws:profile: dev
   aws:region: us-east-1
-  devPulumiConfig:fallBackRoute: 0.0.0.0/0
-  devPulumiConfig:igwName: csye6225-dev-dev-igw
-  devPulumiConfig:mainNetwork: 10.0.0.0/16
+  devPulumiConfig:AsDefaultCooldown: "60"
+  devPulumiConfig:AsDesiredCapacity: "1"
+  devPulumiConfig:AsMaxTries: "3"
+  devPulumiConfig:AsMinTries: "1"
+  devPulumiConfig:adjustmentType: PercentChangeInCapacity
+  devPulumiConfig:amiId: ami-0a7d7d4abb2651854
+  devPulumiConfig:autoScalingGroup: csye6225-devAutoScalingGroup
+  devPulumiConfig:bucketLocation: us-central1
+  devPulumiConfig:bucketName: csye6225-dev-bucket
+  devPulumiConfig:cloudAcctKey: cloud-account-key
+  devPulumiConfig:cloudWatchPolicy: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  devPulumiConfig:cloudwatchRoleName: cloudwatchRole
+  devPulumiConfig:coolDown: "60"
+  devPulumiConfig:cpuAlarmScaleDownName: csye6225-dev-cpu-alarm-scale-down
+  devPulumiConfig:cpuAlarmScaleUpName: csye6225-dev-cpu-alarm-scale-up
+  devPulumiConfig:db_from_port: "3306"
+  devPulumiConfig:db_to_port: "3306"
+  devPulumiConfig:dbEngine: mysql
+  devPulumiConfig:dbInstanceName: csye6225-dev-db-instance
+  devPulumiConfig:dbInstancePassword: csye6225-devrds
+  devPulumiConfig:dbInstanceUserName: root
+  devPulumiConfig:dbMaxConnections: "100"
+  devPulumiConfig:dbName: Assignments_Demo_DB
+  devPulumiConfig:dbTypePg: mysql8.0
   devPulumiConfig:defaultCidr: 10.0.0.0/16
+  devPulumiConfig:domainName: dev.donquixote.me
+  devPulumiConfig:dynamoDBARN: arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+  devPulumiConfig:dynamoDbTableName: csye6225-dev-email-tracking
+  devPulumiConfig:ec2InstanceName: csye6225-dev-ec2-instance-name
+  devPulumiConfig:evaluationPeriods: "1"
+  devPulumiConfig:fallBackRoute: 0.0.0.0/0
+  devPulumiConfig:handler: index.handler
+  devPulumiConfig:healthRoute: /healthz
+  devPulumiConfig:healthyThreshold: "60"
+  devPulumiConfig:http_from_port: "80"
+  devPulumiConfig:http_to_port: "80"
+  devPulumiConfig:httpListener: csye6225-dev-http-listener
+  devPulumiConfig:httpListnerDefaultType: forward
+  devPulumiConfig:httpListnerName: csye6225-dev-http-listner-name
+  devPulumiConfig:httpListnerPort: "80"
+  devPulumiConfig:https_from_port: "443"
+  devPulumiConfig:https_to_port: "443"
+  devPulumiConfig:igwName: csye6225-dev-dev-igw
+  devPulumiConfig:instanceProfileName: csye6225-dev-cloudwatch
+  devPulumiConfig:intervalTG: "60"
+  devPulumiConfig:ipv4: "0.0.0.0/0"
+  devPulumiConfig:keyName: csye6225-key-pair
+  devPulumiConfig:lambdaFunctionName: csye6225-dev-lambda-function
+  devPulumiConfig:lambdaLogGrp: lambda-logs
+  devPulumiConfig:lambdaRole: csye6225-dev-lambda-role
+  devPulumiConfig:lambdaService: lambda.amazonaws.com
+  devPulumiConfig:launchTemplate: csye6225-dev-launch-template
+  devPulumiConfig:loadBalancer: csye6225-dev-load-balancer
+  devPulumiConfig:loadBalancerIPType: ipv4
+  devPulumiConfig:loadBalancerName: csye6225-dev-load-balancer
+  devPulumiConfig:loadBalancerSg: csye6225-dev-load-balancer-sg
+  devPulumiConfig:log4jsPolicy: arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+  devPulumiConfig:mailApi: 1b78b77329307a9ecff7149f4a6d0e0e-30b58138-8cf81061
+  devPulumiConfig:mailDomain: donquixote.me
+  devPulumiConfig:mainNetwork: 10.0.0.0/16
+  devPulumiConfig:policyType: SimpleScaling
+  devPulumiConfig:port: "8080"
   devPulumiConfig:privateRoutingTableName: csye6225-dev-private-routing-table
+  devPulumiConfig:protocol: tcp
+  devPulumiConfig:protocolTG: HTTP
   devPulumiConfig:publicRouteName: csye6225-dev-public-routing-subnet
-  devPulumiConfig:vpcName: csye6225-dev-dev-vpc
   devPulumiConfig:publicRoutingTableName: csye6225-dev-public-routing-table
-  devPulumiConfig:subnetMask: 24
+  devPulumiConfig:rdsName: csye6225-dev-rds
+  devPulumiConfig:route53Name: csye6225-dev-route-53
+  devPulumiConfig:runtime: nodejs14.x
+  devPulumiConfig:scaleDownPolicy: csye6225-dev-Scale-Down-Policy
+  devPulumiConfig:scaleUpPolicy: csye6225-dev-Scale-Up-Policy
+  devPulumiConfig:scalingDownAdjustments: "-1"
+  devPulumiConfig:scalingDownThreshold: "3"
+  devPulumiConfig:scalingMetricName: CPUUtilization
+  devPulumiConfig:scalingPeriod: "60"
+  devPulumiConfig:scalingStatistic: Average
+  devPulumiConfig:scalingUpAdjustments: "1"
+  devPulumiConfig:scalingUpThreshold: "5"
+  devPulumiConfig:secretName: gcp-service-key
   # devPulumiConfig:totalSubnets: 6
   devPulumiConfig:selectedRegion: us-east-1
-  devPulumiConfig:amiId: ami-0a7d7d4abb2651854
-  devPulumiConfig:sgName: csye6225-dev-sg
-  devPulumiConfig:ssh_from_port: 22
-  devPulumiConfig:ssh_to_port: 22
-  devPulumiConfig:protocol: tcp
-  devPulumiConfig:ipv4: "0.0.0.0/0"
-  devPulumiConfig:http_from_port: 80
-  devPulumiConfig:http_to_port: 80
-  devPulumiConfig:https_from_port: 443
-  devPulumiConfig:https_to_port: 443
-  devPulumiConfig:webapp_from_port: 8080
-  devPulumiConfig:webapp_to_port: 8080
-  devPulumiConfig:ec2InstanceName: csye6225-dev-ec2-instance-name
-  devPulumiConfig:keyName: csye6225-key-pair
-  devPulumiConfig:rdsName: csye6225-dev-rds
-  devPulumiConfig:dbInstanceName: csye6225-dev-db-instance
-  devPulumiConfig:dbInstanceUserName: root
-  devPulumiConfig:dbInstancePassword: csye6225-devrds
-  devPulumiConfig:dbName: Assignments_Demo_DB
+  devPulumiConfig:servicAccountKey: cloud-account-key
+  devPulumiConfig:servicAccountName: csye6225-dev-acct
+  devPulumiConfig:serviceAcctName: csye6225-dev-acct
   devPulumiConfig:sgDBName: root
-  devPulumiConfig:db_from_port: 3306
-  devPulumiConfig:db_to_port: 3306
-  devPulumiConfig:subnetGroupName: csye6225-dev-rds-subnet-grp-name
+  devPulumiConfig:sgName: csye6225-dev-sg
   devPulumiConfig:sgRDSName: csye6225-dev-sg-rds
-  devPulumiConfig:dbTypePg: mysql8.0
-  devPulumiConfig:dbMaxConnections: 100
-  devPulumiConfig:dbEngine: mysql
-  devPulumiConfig:domainName: dev.donquixote.me
-  devPulumiConfig:port: 8080
-  devPulumiConfig:ttl: 60
-  devPulumiConfig:route53Name: csye6225-dev-route-53
-  devPulumiConfig:cloudwatchRoleName: cloudwatchRole
-  devPulumiConfig:cloudWatchPolicy: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-  devPulumiConfig:log4jsPolicy: arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
-  devPulumiConfig:instanceProfileName: csye6225-dev-cloudwatch
-  devPulumiConfig:launchTemplate: csye6225-dev-launch-template
-  devPulumiConfig:autoScalingGroup: csye6225-devAutoScalingGroup
-  devPulumiConfig:scaleUpPolicy: csye6225-dev-Scale-Up-Policy
-  devPulumiConfig:adjustmentType: PercentChangeInCapacity
-  devPulumiConfig:scaleDownPolicy: csye6225-dev-Scale-Down-Policy
-  devPulumiConfig:coolDown: 60
-  devPulumiConfig:scalingUpAdjustments: 1
-  devPulumiConfig:scalingDownAdjustments: -1
-  devPulumiConfig:loadBalancer: csye6225-dev-load-balancer
-  devPulumiConfig:loadBalancerSg: csye6225-dev-load-balancer-sg
-  devPulumiConfig:httpListener: csye6225-dev-http-listener
-  devPulumiConfig:healthRoute: /healthz
-  devPulumiConfig:protocolTG: HTTP
-  devPulumiConfig:timeoutTG: 30
-  devPulumiConfig:intervalTG: 60
-  devPulumiConfig:healthyThreshold: 60
-  devPulumiConfig:AsMaxTries: 3
-  devPulumiConfig:AsMinTries: 1
-  devPulumiConfig:AsDesiredCapacity: 1
-  devPulumiConfig:AsDefaultCooldown: 60
-  devPulumiConfig:policyType: SimpleScaling
-  devPulumiConfig:evaluationPeriods: 1
-  devPulumiConfig:cpuAlarmScaleUpName: csye6225-dev-cpu-alarm-scale-up
-  devPulumiConfig:cpuAlarmScaleDownName: csye6225-dev-cpu-alarm-scale-down
-  devPulumiConfig:scalingPeriod: 60
-  devPulumiConfig:scalingUpThreshold: 5
-  devPulumiConfig:scalingDownThreshold: 3
-  devPulumiConfig:scalingStatistic: Average
-  devPulumiConfig:scalingMetricName: CPUUtilization
-  devPulumiConfig:httpListnerPort: 80
-  devPulumiConfig:loadBalancerName: csye6225-dev-load-balancer
-  devPulumiConfig:loadBalancerIPType: ipv4
-  devPulumiConfig:httpListnerName: csye6225-dev-http-listner-name
-  devPulumiConfig:httpListnerDefaultType: forward
   devPulumiConfig:snsTopic: csye6225-dev-sns
- 
-  
-
-  
-
-  
-
-
-  
-
+  devPulumiConfig:ssh_from_port: "22"
+  devPulumiConfig:ssh_to_port: "22"
+  devPulumiConfig:subnetGroupName: csye6225-dev-rds-subnet-grp-name
+  devPulumiConfig:subnetMask: "24"
+  devPulumiConfig:timeoutTG: "30"
+  devPulumiConfig:ttl: "60"
+  devPulumiConfig:vpcName: csye6225-dev-dev-vpc
+  devPulumiConfig:webapp_from_port: "8080"
+  devPulumiConfig:webapp_to_port: "8080"
+  gcp:project: sye6225-dev-406320

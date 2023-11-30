@@ -502,57 +502,17 @@ async function createSubnet() {
             },
         );
 
-        // const customRole = new gcp.projects.IAMCustomRole("customRole", {
-        //     roleId: "iam.serviceAccounts.create",
-        //     permissions: ["iam.serviceAccountCreator", "iam.serviceAccounts.get", "resourcemanager.projectIamAdmin"],
-        //     title: "Create Service Accounts",
-        //     description: "Allows creating service accounts",
-        // });
-
-        // const serviceAccount = new gcp.serviceaccount.Account("assignment", {
-        //     accountId: "assignment",
-        //     displayName: "Service Account",
-        // });
-
-        // const serviceAccountRoleBinding = new gcp.projects.IAMBinding("serviceAccountRoleBinding", {
-        //     project: gcp.config.project,
-        //     role: customRole.name,
-        //     members: [`serviceAccount:${serviceAccount.email}`],
-        //     serviceAccountId: serviceAccount.accountId
-        // });
-
-        // // const storageBucket = new gcp.storage.Bucket("my-storage-bucket", {
-        // //     location: "us-central1",
-        // // });
-
-        // const objectCreatorRoleBinding = new gcp.projects.IAMBinding("objectCreatorRoleBinding", {
-        //     project: gcp.config.project,
-        //     role: "roles/storage.objectCreator",
-        //     members: [`serviceAccount:${serviceAccount.email}`],
-        // });
-
-        // const accessKeys = new gcp.serviceaccount.Key("my-access-keys", {
-        //     serviceAccountId: serviceAccount.accountId,
-        // });
-
-        // const member = "user:amretasrert@gmail.com";
-
-        const serviceAccount = new gcp.serviceaccount.Account("csye6225-demo-acct", {
-            accountId: "csye6225-demo-acct",
+        const serviceAccount = new gcp.serviceaccount.Account(config.require("serviceAcctName"), {
+            accountId: config.require("serviceAcctName"),
             displayName: "CSYE6225 Demo Account",
         });
 
-        const serviceAccountKey = new gcp.serviceaccount.Key("cloud-account-key", {
+        const serviceAccountKey = new gcp.serviceaccount.Key(config.require("cloudAcctKey"), {
             serviceAccountId: serviceAccount.name,
         });
 
-        // const secretServiceKey = new aws.secretsmanager.Secret(config.require("secretName"), {
-        //     description: "Service account key for GCP",
-        //     secretString: serviceAccountKey.privateKeyJson,
-        // });
-
-        const myBucket = new gcp.storage.Bucket("my-bucket", {
-            location: "us-central1",
+        const myBucket = new gcp.storage.Bucket(config.require("bucketName"), {
+            location: config.require("bucketLocation"),
             forceDestroy: true,
         });
 
@@ -608,9 +568,18 @@ async function createSubnet() {
             policyArn: cloudwatchLogsPolicy.arn,
         });
 
-        // const logGroup = new aws.cloudwatch.LogGroup("lambda-logs", {
-        //     retentionInDays: 7, 
-        // });
+        const lambdaRolePolicyAttachment_4 = new aws.iam.RolePolicyAttachment("dynamoDBPolicy", {
+            role: lambdaRole.name,
+            policyArn: config.require("dynamoDBARN"),
+        });
+
+        const dynamoTable = new aws.dynamodb.Table(config.require("dynamoDbTableName"), {
+            attributes: [
+                { name: "submissionId", type: "S" },
+            ],
+            hashKey: "submissionId",
+            billingMode: "PAY_PER_REQUEST",
+        });
 
         const lambdaFunction = new aws.lambda.Function(config.require("lambdaFunctionName"), {
             handler: config.require("handler"),
@@ -627,14 +596,13 @@ async function createSubnet() {
                     // SNS_TOPIC_ARN: snsArn,
                     SERVICE_ACCOUNT_KEY: serviceAccountKey.privateKey,
                     MAILGUN_API_KEY: config.require("mailApi"),
-                    MAILGUN_DOMAIN: config.require("mailDomain")
+                    MAILGUN_DOMAIN: config.require("mailDomain"),
+                    DYNAMO_DB_TABLE_NAME: dynamoTable.name
                 },
             },
-            // timeout: 60,
-            // logGroupName: config.require("lambdaLogGrp"),
         });
 
-        const snsLambdaPermission = new aws.lambda.Permission("myLambdaPermission", {
+        const snsLambdaPermission = new aws.lambda.Permission("lambdaPermission", {
             action: "lambda:InvokeFunction",
             function: lambdaFunction.arn,
             principal: "sns.amazonaws.com",
@@ -646,18 +614,6 @@ async function createSubnet() {
             topic: snsArn,
             endpoint: lambdaFunction.arn,
         });
-
-        // const snsLambdaPermissionTest = new aws.lambda.Permission("mySNSLambdaPermissions", {
-        //     action: "lambda:InvokeFunction",
-        //     function: lambdaFunctionTest.arn,
-        //     principal: "sns.amazonaws.com",
-        //     sourceArn: snsTopic.arn,
-        // });
-
-        // const lambdaEventSourceMapping = new aws.lambda.EventSourceMapping("myLambdaEventSourceMapping", {
-        //     eventSourceArn: snsArn,
-        //     functionName: lambdaFunction.name,
-        // });
 
     } catch (error) {
         console.error("Error while creating subnets:", error);
