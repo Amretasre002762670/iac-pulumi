@@ -7,8 +7,8 @@ config:
   devPulumiConfig:AsMaxTries: "3"
   devPulumiConfig:AsMinTries: "1"
   devPulumiConfig:adjustmentType: PercentChangeInCapacity
-  devPulumiConfig:amiId: ami-011125049af4831a9
-  devPulumiConfig:autoScalingGroup: csye6225-demoAutoScalingGroup
+  devPulumiConfig:amiId: ami-0deb2901ffcf0b4fa
+  devPulumiConfig:autoScalingGroup: csye6225-AutoScalingGroup
   devPulumiConfig:cloudWatchPolicy: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
   devPulumiConfig:cloudwatchRoleName: cloudwatchRole
   devPulumiConfig:coolDown: "60"
@@ -49,7 +49,7 @@ config:
   devPulumiConfig:lambdaLogGrp: lambda-logs
   devPulumiConfig:lambdaRole: csye6225-demo-lambda-role
   devPulumiConfig:lambdaService: lambda.amazonaws.com
-  devPulumiConfig:launchTemplate: csye6225-demo-launch-template
+  devPulumiConfig:launchTemplate: csye6225-launch-template
   devPulumiConfig:loadBalancer: csye6225-demo-load-balancer
   devPulumiConfig:loadBalancerIPType: ipv4
   devPulumiConfig:loadBalancerName: csye6225-load-balancer
@@ -102,5 +102,6 @@ config:
   devPulumiConfig:cloudAcctKey: cloud-account-key
   devPulumiConfig:bucketName: csye6225-demo-bucket
   devPulumiConfig:bucketLocation: us-central1
-  devPulumiConfig:
+  devPulumiConfig:listnerProtocol: HTTPS
+  devPulumiConfig:certificateARN: arn:aws:acm:us-east-1:109192051301:certificate/05a8a230-32d0-40f5-a167-79cca412a6f7
   gcp:project: csye6225-demo-406315

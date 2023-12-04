@@ -387,6 +387,7 @@ async function createSubnet() {
         );
 
         const autoScalingGroup = new aws.autoscaling.Group(config.require("autoScalingGroup"), {
+            name: config.require("autoScalingGroup"),
             vpcZoneIdentifiers: created_subnet_arr,
             launchTemplate: {
                 id: launchTemplate.id,
@@ -470,14 +471,16 @@ async function createSubnet() {
 
         const httpListener = new aws.lb.Listener(config.require("httpListnerName"), {
             loadBalancerArn: loadBalancer.arn,
-            port: config.require("httpListnerPort"),
-            protocol: config.require("protocolTG"),
+            port: config.require("https_from_port"),
+            protocol: config.require("listnerProtocol"),
             defaultActions: [
                 {
                     type: config.require("httpListnerDefaultType"),
                     targetGroupArn: targetGroup.arn,
                 },
             ],
+            sslPolicy: "ELBSecurityPolicy-2016-08",
+            certificateArn: config.require("certificateARN"),
         });
 
         const zoneId = hostedZone.then(zone => zone.id);
