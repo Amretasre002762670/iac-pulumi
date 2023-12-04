@@ -45,8 +45,16 @@ cat /var/log/cloud-init.log
 cat /var/log/cloud-init-output.log
 ```
 
+### Command to import
+```
+sudo chown amretasrerengarajan:staff private.key
+aws acm import-certificate --certificate fileb:///Users/amretasrerengarajan/AccessKeysAWS/demo/ssl-demo/demo_donquixote_me.crt \
+      --certificate-chain fileb:///Users/amretasrerengarajan/AccessKeysAWS/demo/ssl-demo/demo_donquixote_me.ca-bundle \
+      --private-key fileb:///Users/amretasrerengarajan/AccessKeysAWS/demo/ssl-demo/private.key
+```
 
-Google Cloud Credentials saved in:
+
+### Google Cloud Credentials saved in:
 ```
 gcloud init
 gcloud auth application-default login
