@@ -135,12 +135,12 @@ async function createSubnet() {
             vpcId: main.id,
             description: "Load Balancer Security Group",
             ingress: [
-                {
-                    protocol: config.require('protocol'),
-                    fromPort: config.require('http_from_port'),
-                    toPort: config.require('http_to_port'),
-                    cidrBlocks: [config.require('ipv4')],
-                },
+                // {
+                //     protocol: config.require('protocol'),
+                //     fromPort: config.require('http_from_port'),
+                //     toPort: config.require('http_to_port'),
+                //     cidrBlocks: [config.require('ipv4')],
+                // },
                 {
                     protocol: config.require('protocol'),
                     fromPort: config.require('https_from_port'),
